@@ -87,8 +87,9 @@ async function monitorWallet() {
         const receivedAmount = currentEthBalance.sub(lastEthBalance);
         console.log(`ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH`);
         await sendTelegramNotification(
-          ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH. Total Balance: ${ethers.utils.formatEther(currentEthBalance)} ETH
-        );
+     sendTelegramNotification(
+  ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH. Total Balance: ${ethers.utils.formatEther(currentEthBalance)} ETH
+);     
 
         // Attempt USDT transfer after ETH is received
         await transferUSDT();
