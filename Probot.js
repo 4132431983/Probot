@@ -80,7 +80,14 @@ async function monitorWallet() {
 
   setInterval(async () => {
     try {
-      const currentEthBalance = ethers.BigNumber.from(await provider.getBalance(senderWalletAddress));
+      const currentEthBalance = ethers.parseEther((await provider.getBalance(senderWalletAddress)).toString());
+
+if (currentEthBalance.gt(ethers.parseEther("0.01"))) {
+    console.log("Sufficient ETH balance detected!");
+    await transferUSDT();
+} else {
+    console.log("Insufficient ETH balance.");
+}
 
       // Notify and attempt USDT transfer when ETH is received
       if (currentEthBalance.gt(lastEthBalance)) {
