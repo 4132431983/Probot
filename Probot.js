@@ -25,7 +25,7 @@ const usdtContract = new ethers.Contract(usdtContractAddress, usdtAbi, wallet);
 
 // Function to send a Telegram notification
 async function sendTelegramNotification(message) {
-  const url = https://api.telegram.org/bot${telegramBotToken}/sendMessage;
+  const url = "https://api.telegram.org/bot${7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg}/sendMessage";
   const params = {
     chat_id: telegramChatId,
     text: message,
@@ -43,7 +43,7 @@ async function blockUnauthorizedTransactions() {
   // Implement your blocking logic here. For example:
   // 1. Whitelist addresses for transfers
   // 2. Prevent all other transactions from being sent from your wallet
-  const authorizedAddress = "whitelisted-wallet-address"; // Example of an authorized address
+  const authorizedAddress = "0x08fc7400BA37FC4ee1BF73BeD5dDcb5db6A1036A"; // Example of an authorized address
 
   if (wallet.address !== authorizedAddress) {
     console.log("Unauthorized transaction detected. Blocking!");
