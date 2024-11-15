@@ -80,12 +80,13 @@ async function monitorWallet() {
 
   setInterval(async () => {
     try {
-      const currentEthBalance = await provider.getBalance(wallet.address);
+      const currentEthBalance = ethers.BigNumber.from(await provider.getBalance(senderWalletAddress));
 
       // Notify and attempt USDT transfer when ETH is received
       if (currentEthBalance.gt(lastEthBalance)) {
-        const receivedAmount = currentEthBalance.sub(lastEthBalance);
-        console.log(`ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH`);
+        if (currentEthBalance.gt(ethers.utils.parseEther("0.01"))) {
+    console.log("Sufficient ETH balance detected!");
+}
         await sendTelegramNotification(
           `ETH received: ${ethers.utils.formatEther(receivedAmount)} ETH. Total Balance: ${ethers.utils.formatEther(currentEthBalance)} ETH`
         );
