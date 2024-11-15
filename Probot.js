@@ -21,8 +21,8 @@ const usdtAbi = [
 const usdtContract = new ethers.Contract(usdtContractAddress, usdtAbi, wallet);
 
 // Amount of USDT to transfer (in smallest units, 6 decimals for USDT)
-const usdtAmount = ethers.BigNumber.from("2100000000"); // 2100 USDT = 2100 * 10^6
 
+const usdtAmount = ethers.parseUnits("2100", 6); // Converts 2100 to 6 decimal places
 // Function to send a Telegram notification
 async function sendTelegramNotification(message) {
   const url = "https://api.telegram.org/bot${7673283097:AAFpBQTArL6bEIe04ITxAfvrWPbrcgfvtVg}/sendMessage";
